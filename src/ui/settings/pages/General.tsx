@@ -1,8 +1,12 @@
 import { DISCORD_SERVER, GITHUB } from "@lib/constants";
-import { getDebugInfo, toggleSafeMode } from "@lib/debug";
+import {
+  getDebugInfo,
+  setDevelopmentBuildEnabled,
+  toggleSafeMode
+} from "@lib/debug";
 import { BundleUpdaterManager } from "@lib/native";
-import settings from "@lib/settings";
-import { removeMMKVBackend, useProxy } from "@lib/storage";
+import settings, { loaderConfig } from "@lib/settings";
+import { removeCachedScript, removeMMKVBackend, useProxy } from "@lib/storage";
 import { url, ReactNative as RN } from "@metro/common";
 import { ButtonColors } from "@types";
 import { showConfirmationAlert } from "@ui/alerts";
@@ -15,6 +19,7 @@ const debugInfo = getDebugInfo();
 
 export default function General() {
   useProxy(settings);
+  useProxy(loaderConfig);
 
   const versions = [
     {
@@ -86,6 +91,9 @@ export default function General() {
     }
   ];
 
+  // Workaround so it restores the config correctly even when the dev build option is turned off
+  settings.__previousCustomLoadUrlConfig ??= loaderConfig.customLoadUrl;
+
   return (
     <ErrorBoundary>
       <RN.ScrollView
@@ -137,6 +145,17 @@ export default function General() {
             onPress={toggleSafeMode}
           />
           <FormDivider />
+          <FormRow
+            label="Update Revenge"
+            subLabel="This process usually happens automatically. If it doesn't, you can force it here."
+            leading={
+              <FormRow.Icon source={getAssetIDByName("ic_message_retry")} />
+            }
+            onPress={() =>
+              setDevelopmentBuildEnabled(settings.developmentBuildEnabled)
+            }
+          />
+          <FormDivider />
           <FormSwitchRow
             label="Developer Settings"
             leading={
@@ -170,6 +189,30 @@ export default function General() {
           </Summary>
         </FormSection>
         <FormSection title="Advanced">
+          <FormSwitchRow
+            label="Use Development Builds"
+            subLabel="Use development builds for testing new features or bug fixes, may be unstable."
+            leading={
+              <FormRow.Icon
+                source={getAssetIDByName("ic_progress_wrench_24px")}
+              />
+            }
+            value={settings.developmentBuildEnabled}
+            onValueChange={(v: boolean) => {
+              if (v)
+                showConfirmationAlert({
+                  title: "Use development builds?",
+                  content:
+                    "Development builds can be unstable and may contain bugs. Changes will apply next time the app launches or reloads.",
+                  confirmText: "Continue",
+                  cancelText: "Nevermind",
+                  confirmColor: ButtonColors.RED,
+                  onConfirm: () => setDevelopmentBuildEnabled(v)
+                });
+              else setDevelopmentBuildEnabled(v);
+            }}
+          />
+          <FormDivider />
           <FormRow
             label="Clear Plugin Storage"
             leading={
@@ -183,10 +226,10 @@ export default function General() {
                 confirmText: "Yes, I have a corrupted storage",
                 cancelText: "Cancel",
                 confirmColor: ButtonColors.RED,
-                onConfirm: () => {
-                  removeMMKVBackend("VENDETTA_PLUGINS");
-                  BundleUpdaterManager.reload();
-                }
+                onConfirm: () =>
+                  removeMMKVBackend("VENDETTA_PLUGINS").finally(
+                    BundleUpdaterManager.reload
+                  )
               })
             }
           />
@@ -204,10 +247,10 @@ export default function General() {
                 confirmText: "Yes, I have a corrupted storage",
                 cancelText: "Cancel",
                 confirmColor: ButtonColors.RED,
-                onConfirm: () => {
-                  removeMMKVBackend("VENDETTA_THEMES");
-                  BundleUpdaterManager.reload();
-                }
+                onConfirm: () =>
+                  removeMMKVBackend("VENDETTA_THEMES").finally(
+                    BundleUpdaterManager.reload
+                  )
               })
             }
           />

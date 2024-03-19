@@ -4,10 +4,15 @@ import {
   createStorage,
   wrapSync
 } from "@lib/storage";
-import type { LoaderConfig, Settings } from "@types";
+import type {
+  ExtendedVeryPrivateSoonToBeMovedSettings,
+  LoaderConfig
+} from "@types";
 
 export default wrapSync(
-  createStorage<Settings>(createMMKVBackend("VENDETTA_SETTINGS"))
+  createStorage<ExtendedVeryPrivateSoonToBeMovedSettings>(
+    createMMKVBackend("VENDETTA_SETTINGS")
+  )
 );
 export const loaderConfig = wrapSync(
   createStorage<LoaderConfig>(createFileBackend("vendetta_loader.json"))

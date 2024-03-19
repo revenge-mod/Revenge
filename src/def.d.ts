@@ -195,6 +195,11 @@ interface Settings {
   };
 }
 
+interface ExtendedVeryPrivateSoonToBeMovedSettings extends Settings {
+  developmentBuildEnabled: boolean;
+  __previousCustomLoadUrlConfig?: LoaderConfig["customLoadUrl"];
+}
+
 interface ApplicationCommand {
   description: string;
   name: string;

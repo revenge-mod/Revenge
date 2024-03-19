@@ -1,3 +1,4 @@
+import { DEVELOPMENT_DISTRIBUTION_URL } from "@lib/constants";
 import logger from "@lib/logger";
 import {
   BundleUpdaterManager,
@@ -5,12 +6,15 @@ import {
   DeviceManager
 } from "@lib/native";
 import { after } from "@lib/patcher";
-import settings from "@lib/settings";
+import settings, { loaderConfig } from "@lib/settings";
 import { getCurrentTheme, selectTheme } from "@lib/themes";
 import { ReactNative as RN } from "@metro/common";
-import type { RNConstants } from "@types";
+import { ButtonColors, type RNConstants } from "@types";
+import { showConfirmationAlert } from "@ui/alerts";
 import { getAssetIDByName } from "@ui/assets";
 import { showToast } from "@ui/toasts";
+import { removeCachedScript } from "./storage";
+
 export let socket: WebSocket;
 
 export async function toggleSafeMode() {
@@ -91,7 +95,7 @@ export function getDebugInfo() {
     vendetta: {
       version: versionHash,
       loader: window.__vendetta_loader?.name ?? "Unknown",
-      branch,
+      branch
     },
     discord: {
       version: ClientInfoManager.Version,
@@ -142,4 +146,40 @@ export function getDebugInfo() {
       }
     })!
   };
+}
+
+export async function setDevelopmentBuildEnabled(
+  enabled: boolean,
+  showReloadPopup = true
+) {
+  if (enabled) {
+    settings.__previousCustomLoadUrlConfig = loaderConfig.customLoadUrl;
+    loaderConfig.customLoadUrl = {
+      enabled: true,
+      url: DEVELOPMENT_DISTRIBUTION_URL
+    };
+  } else {
+    const previousConfig = settings.__previousCustomLoadUrlConfig;
+    if (previousConfig) loaderConfig.customLoadUrl = previousConfig;
+    else
+      loaderConfig.customLoadUrl = {
+        enabled: false,
+        url: "http://localhost:4040/revenge.js"
+      };
+    settings.__previousCustomLoadUrlConfig = undefined;
+  }
+
+  settings.developmentBuildEnabled = enabled;
+
+  await removeCachedScript();
+
+  if (showReloadPopup)
+    showConfirmationAlert({
+      title: "Reload required",
+      content: "Changes will only apply next time the app launches or reloads.",
+      confirmText: "Reload now",
+      cancelText: "Later",
+      confirmColor: ButtonColors.PRIMARY,
+      onConfirm: BundleUpdaterManager.reload
+    });
 }

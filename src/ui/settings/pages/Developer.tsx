@@ -1,8 +1,11 @@
-import { connectToDebugger } from "@lib/debug";
+import { connectToDebugger, setDevelopmentBuildEnabled } from "@lib/debug";
+import { BundleUpdaterManager } from "@lib/native";
 import settings, { loaderConfig } from "@lib/settings";
 import { useProxy } from "@lib/storage";
 import { NavigationNative, ReactNative as RN } from "@metro/common";
 import { findByProps } from "@metro/filters";
+import { ButtonColors } from "@types";
+import { showConfirmationAlert } from "@ui/alerts";
 import { getAssetIDByName } from "@ui/assets";
 import { ErrorBoundary, Forms } from "@ui/components";
 import AssetBrowser from "@ui/settings/pages/AssetBrowser";
@@ -10,6 +13,7 @@ import AssetBrowser from "@ui/settings/pages/AssetBrowser";
 const { FormSection, FormRow, FormSwitchRow, FormInput, FormDivider } = Forms;
 const { hideActionSheet } = findByProps("openLazy", "hideActionSheet");
 const { showSimpleActionSheet } = findByProps("showSimpleActionSheet");
+const { TextStyleSheet } = findByProps("TextStyleSheet");
 
 export default function Developer() {
   const navigation = NavigationNative.useNavigation();
@@ -56,25 +60,53 @@ export default function Developer() {
         </FormSection>
         {window.__vendetta_loader?.features.loaderConfig && (
           <FormSection title="Loader config">
-            <FormSwitchRow
-              label="Load from custom url"
-              subLabel={"Load Revenge from a custom endpoint."}
-              leading={<FormRow.Icon source={getAssetIDByName("copy")} />}
-              value={loaderConfig.customLoadUrl.enabled}
-              onValueChange={(v: boolean) => {
-                loaderConfig.customLoadUrl.enabled = v;
-              }}
-            />
-            <FormDivider />
-            {loaderConfig.customLoadUrl.enabled && (
+            {settings.developmentBuildEnabled ? (
+              <FormRow
+                label="Load from custom URL"
+                subLabel="Using development builds overrides this setting, tap to disable."
+                leading={<FormRow.Icon source={getAssetIDByName("copy")} />}
+                onPress={() =>
+                  showConfirmationAlert({
+                    title: "Stop using development builds?",
+                    content: [
+                      "To use the ",
+                      <RN.Text style={TextStyleSheet["text-md/semibold"]}>
+                        Load from custom URL
+                      </RN.Text>,
+                      " option, you will have to stop using development builds as it overrides this setting."
+                    ],
+                    confirmText: "Revert",
+                    cancelText: "Cancel",
+                    confirmColor: ButtonColors.PRIMARY,
+                    onConfirm: () => setDevelopmentBuildEnabled(false)
+                  })
+                }
+              />
+            ) : (
               <>
-                <FormInput
-                  value={loaderConfig.customLoadUrl.url}
-                  onChange={(v: string) => (loaderConfig.customLoadUrl.url = v)}
-                  placeholder="http://localhost:4040/revenge.js"
-                  title="REVENGE URL"
+                <FormSwitchRow
+                  label="Load from custom URL"
+                  subLabel="Load Revenge from a custom endpoint."
+                  leading={<FormRow.Icon source={getAssetIDByName("copy")} />}
+                  value={loaderConfig.customLoadUrl.enabled}
+                  onValueChange={(v: boolean) => {
+                    loaderConfig.customLoadUrl.enabled = v;
+                  }}
                 />
                 <FormDivider />
+                {loaderConfig.customLoadUrl.enabled && (
+                  <>
+                    <FormInput
+                      value={loaderConfig.customLoadUrl.url}
+                      onChange={(v: string) =>
+                        (loaderConfig.customLoadUrl.url = v)
+                      }
+                      placeholder="http://localhost:4040/revenge.js"
+                      title="REVENGE URL"
+                    />
+                    <FormDivider />
+                  </>
+                )}
               </>
             )}
             {window.__vendetta_loader.features.devtools && (
