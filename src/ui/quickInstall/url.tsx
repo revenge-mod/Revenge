@@ -1,5 +1,5 @@
 import type { anyFunction } from "@/def";
-import { PROXY_PREFIXES, THEMES_CHANNEL_ID } from "@lib/constants";
+import { PROXY_PREFIXES, THEMES_CHANNEL_ID, THEMES_REVENGE_CHANNEL_ID} from "@lib/constants";
 import { after, instead } from "@lib/patcher";
 import { installPlugin } from "@lib/plugins";
 import { installTheme } from "@lib/themes";
@@ -70,11 +70,11 @@ export default () => {
       if (!urlType) return orig.apply(this, args);
 
       // Make clicking on theme links only work in #themes, should there be a theme proxy in the future, this can be removed.
-      if (
-        urlType === "Theme" &&
-        getChannel(getChannelId())?.parent_id !== THEMES_CHANNEL_ID
-      )
-        return orig.apply(this, args);
+     if (
+       urlType === "Theme" &&
+       getChannel(getChannelId())?.parent_id !== THEMES_CHANNEL_ID &&
+       getChannel(getChannelId())?.parent_id !== THEMES_REVENGE_CHANNEL_ID
+     ) return orig.apply(this, args);
 
       showConfirmationAlert({
         title: "Hold Up",

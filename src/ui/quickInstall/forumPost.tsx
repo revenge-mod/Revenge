@@ -1,5 +1,8 @@
 import {
   DISCORD_SERVER_ID,
+  DISCORD_REVENGE_SERVER_ID,
+  THEMES_REVENGE_CHANNEL_ID,
+  PLUGINS_REVENGE_CHANNEL_ID,
   HTTP_REGEX_MULTI,
   PLUGINS_CHANNEL_ID,
   PROXY_PREFIXES,
@@ -25,14 +28,21 @@ const { hideActionSheet } = findByProps("openLazy", "hideActionSheet");
 
 export default () =>
   after("default", ForumPostLongPressActionSheet, ([{ thread }], res) => {
-    if (thread.guild_id !== DISCORD_SERVER_ID) return;
+  if (thread.guild_id !== DISCORD_SERVER_ID && thread.guild_id !== DISCORD_REVENGE_SERVER_ID);
 
     // Determine what type of addon this is.
     let postType: "Plugin" | "Theme";
     if (thread.parent_id === PLUGINS_CHANNEL_ID) {
       postType = "Plugin";
+    } else if (thread.parent_id === PLUGINS_REVENGE_CHANNEL_ID) {
+      postType = "Plugin";
     } else if (
       thread.parent_id === THEMES_CHANNEL_ID &&
+      window.__vendetta_loader?.features.themes
+    ) {
+      postType = "Theme";
+    } else if (
+      thread.parent_id === THEMES_REVENGE_CHANNEL_ID &&
       window.__vendetta_loader?.features.themes
     ) {
       postType = "Theme";
